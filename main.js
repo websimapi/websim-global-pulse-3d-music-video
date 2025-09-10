@@ -83,17 +83,25 @@ class MusicVideo {
         this.createMarketElements();
         this.createConflictElements();
         this.createHopeElements();
+        this.createGlobeElement();
+        this.createDroneElements();
+        this.createImageBillboards();
     }
     
     createEnergyElements() {
-        // Larger energy waves for infinite feel
-        const geometry = new THREE.PlaneGeometry(100, 100, 100, 100);
+        // Load energy pattern texture
+        const textureLoader = new THREE.TextureLoader();
+        const energyTexture = textureLoader.load('/energy_pattern.png');
+        
+        // Enhanced energy waves with texture
+        const geometry = new THREE.PlaneGeometry(100, 100, 150, 150);
         const material = new THREE.ShaderMaterial({
             uniforms: {
                 time: { value: 0 },
                 amplitude: { value: 1.0 },
                 color1: { value: new THREE.Color(0xff4500) },
-                color2: { value: new THREE.Color(0xffd700) }
+                color2: { value: new THREE.Color(0xffd700) },
+                energyTexture: { value: energyTexture }
             },
             vertexShader: window.Shaders.energyVertex,
             fragmentShader: window.Shaders.energyFragment,
@@ -105,13 +113,28 @@ class MusicVideo {
         energyWave.userData.isEnergyWave = true;
         this.scene.add(energyWave);
         
-        // More floating energy orbs spread wider
+        // Energy tunnel with texture
+        const tunnelGeometry = new THREE.CylinderGeometry(15, 15, 50, 32, 1, true);
+        const tunnelMaterial = new THREE.MeshBasicMaterial({
+            map: energyTexture,
+            transparent: true,
+            opacity: 0.6,
+            side: THREE.DoubleSide
+        });
+        const energyTunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
+        energyTunnel.rotation.x = Math.PI / 2;
+        energyTunnel.position.z = -30;
+        energyTunnel.userData.isEnergyTunnel = true;
+        this.scene.add(energyTunnel);
+        
+        // More detailed floating energy orbs
         for (let i = 0; i < 50; i++) {
-            const orbGeometry = new THREE.SphereGeometry(0.1, 16, 16);
-            const orbMaterial = new THREE.MeshBasicMaterial({
+            const orbGeometry = new THREE.IcosahedronGeometry(0.2, 2);
+            const orbMaterial = new THREE.MeshPhongMaterial({
                 color: new THREE.Color().setHSL(0.1, 1, 0.5 + Math.random() * 0.5),
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.8,
+                emissive: new THREE.Color().setHSL(0.1, 0.5, 0.2)
             });
             
             const orb = new THREE.Mesh(orbGeometry, orbMaterial);
@@ -127,11 +150,28 @@ class MusicVideo {
     }
     
     createMarketElements() {
-        // More stock market bars spread wider
+        // Load market data texture
+        const textureLoader = new THREE.TextureLoader();
+        const marketTexture = textureLoader.load('/market_data.png');
+        
+        // Enhanced holographic market display
+        const displayGeometry = new THREE.PlaneGeometry(20, 10);
+        const displayMaterial = new THREE.MeshBasicMaterial({
+            map: marketTexture,
+            transparent: true,
+            opacity: 0.8
+        });
+        const marketDisplay = new THREE.Mesh(displayGeometry, displayMaterial);
+        marketDisplay.position.set(-15, 8, -10);
+        marketDisplay.rotation.y = Math.PI / 4;
+        marketDisplay.userData.isMarketDisplay = true;
+        this.scene.add(marketDisplay);
+        
+        // More detailed stock market bars with better geometry
         const barCount = 100;
         for (let i = 0; i < barCount; i++) {
             const height = Math.random() * 5 + 1;
-            const geometry = new THREE.BoxGeometry(0.3, height, 0.3);
+            const geometry = new THREE.CylinderGeometry(0.15, 0.15, height, 8);
             const material = new THREE.ShaderMaterial({
                 uniforms: {
                     time: { value: 0 },
@@ -156,14 +196,19 @@ class MusicVideo {
     }
     
     createConflictElements() {
-        // Conflict visualization with distorted geometries
-        const conflictGeometry = new THREE.IcosahedronGeometry(3, 2);
+        // Load conflict texture
+        const textureLoader = new THREE.TextureLoader();
+        const conflictTexture = textureLoader.load('/conflict_texture.png');
+        
+        // Enhanced conflict visualization with texture
+        const conflictGeometry = new THREE.DodecahedronGeometry(3, 2);
         const conflictMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 time: { value: 0 },
                 intensity: { value: 0.5 },
                 warColor: { value: new THREE.Color(0xff0000) },
-                peaceColor: { value: new THREE.Color(0x0088ff) }
+                peaceColor: { value: new THREE.Color(0x0088ff) },
+                conflictTexture: { value: conflictTexture }
             },
             vertexShader: window.Shaders.conflictVertex,
             fragmentShader: window.Shaders.conflictFragment,
@@ -174,16 +219,61 @@ class MusicVideo {
         conflictSphere.position.set(0, 3, 0);
         conflictSphere.userData.isConflict = true;
         this.scene.add(conflictSphere);
+        
+        // Conflict shards around the main sphere
+        for (let i = 0; i < 12; i++) {
+            const shardGeometry = new THREE.TetrahedronGeometry(0.5, 1);
+            const shardMaterial = new THREE.MeshBasicMaterial({
+                map: conflictTexture,
+                transparent: true,
+                opacity: 0.7
+            });
+            const shard = new THREE.Mesh(shardGeometry, shardMaterial);
+            const angle = (i / 12) * Math.PI * 2;
+            shard.position.set(
+                Math.cos(angle) * 6,
+                3 + Math.sin(i) * 2,
+                Math.sin(angle) * 6
+            );
+            shard.userData.isConflictShard = true;
+            shard.userData.angle = angle;
+            this.scene.add(shard);
+        }
     }
     
     createHopeElements() {
-        // More rising elements spread wider
+        // Load protest crowd texture
+        const textureLoader = new THREE.TextureLoader();
+        const protestTexture = textureLoader.load('/protest_crowd.png');
+        
+        // Protest crowd billboards
+        const crowdGeometry = new THREE.PlaneGeometry(8, 4);
+        const crowdMaterial = new THREE.MeshBasicMaterial({
+            map: protestTexture,
+            transparent: true,
+            alphaTest: 0.1
+        });
+        
+        for (let i = 0; i < 5; i++) {
+            const crowd = new THREE.Mesh(crowdGeometry, crowdMaterial.clone());
+            crowd.position.set(
+                (Math.random() - 0.5) * 60,
+                2,
+                (Math.random() - 0.5) * 60
+            );
+            crowd.rotation.y = Math.random() * Math.PI * 2;
+            crowd.userData.isProtestCrowd = true;
+            this.scene.add(crowd);
+        }
+        
+        // Enhanced rising elements with better geometry
         for (let i = 0; i < 80; i++) {
-            const geometry = new THREE.ConeGeometry(0.1, 2, 6);
-            const material = new THREE.MeshLambertMaterial({
+            const geometry = new THREE.ConeGeometry(0.15, 3, 8);
+            const material = new THREE.MeshPhongMaterial({
                 color: new THREE.Color().setHSL(0.6, 0.7, 0.6),
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.8,
+                shininess: 100
             });
             
             const cone = new THREE.Mesh(geometry, material);
@@ -197,6 +287,93 @@ class MusicVideo {
             cone.userData.riseSpeed = Math.random() * 0.02 + 0.005;
             this.scene.add(cone);
         }
+    }
+    
+    createGlobeElement() {
+        // Create detailed globe with world map texture
+        const textureLoader = new THREE.TextureLoader();
+        const globeTexture = textureLoader.load('/globe_texture.png');
+        
+        const globeGeometry = new THREE.SphereGeometry(5, 64, 64);
+        const globeMaterial = new THREE.MeshPhongMaterial({
+            map: globeTexture,
+            transparent: true,
+            opacity: 0.9
+        });
+        
+        const globe = new THREE.Mesh(globeGeometry, globeMaterial);
+        globe.position.set(20, 8, -20);
+        globe.userData.isGlobe = true;
+        this.scene.add(globe);
+        
+        // Globe atmosphere effect
+        const atmosphereGeometry = new THREE.SphereGeometry(5.2, 32, 32);
+        const atmosphereMaterial = new THREE.MeshBasicMaterial({
+            color: 0x4488ff,
+            transparent: true,
+            opacity: 0.2,
+            side: THREE.BackSide
+        });
+        const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+        globe.add(atmosphere);
+    }
+    
+    createDroneElements() {
+        // Load drone silhouette texture
+        const textureLoader = new THREE.TextureLoader();
+        const droneTexture = textureLoader.load('/drone_silhouette.png');
+        
+        // Create drone billboards
+        for (let i = 0; i < 8; i++) {
+            const droneGeometry = new THREE.PlaneGeometry(2, 1);
+            const droneMaterial = new THREE.MeshBasicMaterial({
+                map: droneTexture,
+                transparent: true,
+                alphaTest: 0.1
+            });
+            
+            const drone = new THREE.Mesh(droneGeometry, droneMaterial);
+            drone.position.set(
+                (Math.random() - 0.5) * 80,
+                8 + Math.random() * 10,
+                (Math.random() - 0.5) * 80
+            );
+            drone.userData.isDrone = true;
+            drone.userData.speed = Math.random() * 0.02 + 0.01;
+            drone.userData.radius = Math.random() * 20 + 10;
+            drone.userData.angle = Math.random() * Math.PI * 2;
+            this.scene.add(drone);
+        }
+    }
+    
+    createImageBillboards() {
+        // Create floating image displays throughout the scene
+        const textureLoader = new THREE.TextureLoader();
+        const textures = [
+            '/energy_pattern.png',
+            '/market_data.png',
+            '/conflict_texture.png'
+        ];
+        
+        textures.forEach((texturePath, index) => {
+            const texture = textureLoader.load(texturePath);
+            const billboardGeometry = new THREE.PlaneGeometry(6, 6);
+            const billboardMaterial = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                opacity: 0.7
+            });
+            
+            const billboard = new THREE.Mesh(billboardGeometry, billboardMaterial);
+            billboard.position.set(
+                Math.cos(index * 2) * 30,
+                5 + index * 3,
+                Math.sin(index * 2) * 30
+            );
+            billboard.userData.isBillboard = true;
+            billboard.userData.index = index;
+            this.scene.add(billboard);
+        });
     }
     
     setupControls() {
@@ -250,9 +427,19 @@ class MusicVideo {
                 child.material.uniforms.amplitude.value = Math.sin(this.currentTime * 2) * 0.5 + 1;
             }
             
+            if (child.userData.isEnergyTunnel) {
+                child.rotation.z += 0.02;
+                child.material.opacity = 0.4 + Math.sin(this.currentTime * 3) * 0.2;
+            }
+            
             if (child.userData.isEnergyOrb) {
                 child.position.y += Math.sin(this.currentTime * child.userData.speed * 10) * 0.02;
                 child.rotation.y += child.userData.speed;
+            }
+            
+            if (child.userData.isMarketDisplay) {
+                child.position.y = 8 + Math.sin(this.currentTime * 2) * 0.5;
+                child.rotation.y = Math.PI / 4 + Math.sin(this.currentTime) * 0.1;
             }
             
             if (child.userData.isMarketData) {
@@ -268,6 +455,38 @@ class MusicVideo {
                 child.material.uniforms.intensity.value = Math.abs(Math.sin(this.currentTime * 2)) * 0.8 + 0.2;
                 child.rotation.x += 0.01;
                 child.rotation.y += 0.02;
+            }
+            
+            if (child.userData.isConflictShard) {
+                const orbitRadius = 6 + Math.sin(this.currentTime * 2) * 2;
+                child.position.x = Math.cos(child.userData.angle + this.currentTime) * orbitRadius;
+                child.position.z = Math.sin(child.userData.angle + this.currentTime) * orbitRadius;
+                child.rotation.x += 0.02;
+                child.rotation.y += 0.03;
+            }
+            
+            if (child.userData.isGlobe) {
+                child.rotation.y += 0.005;
+                child.position.y = 8 + Math.sin(this.currentTime * 0.5) * 1;
+            }
+            
+            if (child.userData.isDrone) {
+                child.userData.angle += child.userData.speed;
+                child.position.x = Math.cos(child.userData.angle) * child.userData.radius;
+                child.position.z = Math.sin(child.userData.angle) * child.userData.radius;
+                child.position.y += Math.sin(this.currentTime * 4 + child.userData.angle) * 0.05;
+                child.lookAt(this.camera.position);
+            }
+            
+            if (child.userData.isBillboard) {
+                child.rotation.y = Math.sin(this.currentTime + child.userData.index) * 0.3;
+                child.position.y = 5 + child.userData.index * 3 + Math.sin(this.currentTime * 2 + child.userData.index) * 0.5;
+                child.lookAt(this.camera.position);
+            }
+            
+            if (child.userData.isProtestCrowd) {
+                child.position.y = 2 + Math.sin(this.currentTime * 3 + child.position.x) * 0.1;
+                child.lookAt(this.camera.position);
             }
             
             if (child.userData.isHope) {

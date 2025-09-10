@@ -23,6 +23,7 @@ window.Shaders = {
         uniform float time;
         uniform vec3 color1;
         uniform vec3 color2;
+        uniform sampler2D energyTexture;
         varying vec2 vUv;
         varying vec3 vPosition;
         
@@ -30,8 +31,9 @@ window.Shaders = {
             float wave = sin(vPosition.x * 5.0 + time * 3.0) * 0.5 + 0.5;
             wave += sin(vPosition.y * 3.0 + time * 2.0) * 0.3;
             
-            vec3 color = mix(color1, color2, wave);
-            float alpha = 0.8 + sin(time * 4.0 + vPosition.x * 2.0) * 0.2;
+            vec4 textureColor = texture2D(energyTexture, vUv + vec2(time * 0.1, 0.0));
+            vec3 color = mix(color1, color2, wave) * textureColor.rgb;
+            float alpha = (0.8 + sin(time * 4.0 + vPosition.x * 2.0) * 0.2) * textureColor.a;
             
             gl_FragColor = vec4(color, alpha);
         }
@@ -99,6 +101,7 @@ window.Shaders = {
         uniform float intensity;
         uniform vec3 warColor;
         uniform vec3 peaceColor;
+        uniform sampler2D conflictTexture;
         varying vec2 vUv;
         varying vec3 vPosition;
         
@@ -106,10 +109,11 @@ window.Shaders = {
             float conflict = sin(time * 6.0 + vPosition.x * 5.0) * 0.5 + 0.5;
             conflict *= intensity;
             
-            vec3 color = mix(peaceColor, warColor, conflict);
+            vec4 textureColor = texture2D(conflictTexture, vUv + vec2(0.0, time * 0.05));
+            vec3 color = mix(peaceColor, warColor, conflict) * textureColor.rgb;
             float distortion = sin(vPosition.x * 30.0 + time * 8.0) * 0.1;
             
-            gl_FragColor = vec4(color + distortion, 0.9);
+            gl_FragColor = vec4(color + distortion, 0.9 * textureColor.a);
         }
     `,
 
