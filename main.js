@@ -31,10 +31,11 @@ class MusicVideo {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
-        this.scene.fog = new THREE.Fog(0x000000, 10, 100);
+        // Extend fog for infinite feeling
+        this.scene.fog = new THREE.Fog(0x000011, 50, 200);
         
         // Global lighting
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
         this.scene.add(ambientLight);
         
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -43,6 +44,25 @@ class MusicVideo {
         this.scene.add(directionalLight);
         
         this.camera.position.set(0, 5, 10);
+        
+        // Create trippy skybox
+        this.createSkybox();
+    }
+    
+    createSkybox() {
+        const skyboxGeometry = new THREE.SphereGeometry(500, 64, 64);
+        const skyboxMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 }
+            },
+            vertexShader: window.Shaders.skyboxVertex,
+            fragmentShader: window.Shaders.skyboxFragment,
+            side: THREE.BackSide
+        });
+        
+        const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
+        skybox.userData.isSkybox = true;
+        this.scene.add(skybox);
     }
     
     setupPostProcessing() {
@@ -66,8 +86,8 @@ class MusicVideo {
     }
     
     createEnergyElements() {
-        // Oil/energy waves
-        const geometry = new THREE.PlaneGeometry(20, 20, 50, 50);
+        // Larger energy waves for infinite feel
+        const geometry = new THREE.PlaneGeometry(100, 100, 100, 100);
         const material = new THREE.ShaderMaterial({
             uniforms: {
                 time: { value: 0 },
@@ -85,8 +105,8 @@ class MusicVideo {
         energyWave.userData.isEnergyWave = true;
         this.scene.add(energyWave);
         
-        // Floating energy orbs
-        for (let i = 0; i < 20; i++) {
+        // More floating energy orbs spread wider
+        for (let i = 0; i < 50; i++) {
             const orbGeometry = new THREE.SphereGeometry(0.1, 16, 16);
             const orbMaterial = new THREE.MeshBasicMaterial({
                 color: new THREE.Color().setHSL(0.1, 1, 0.5 + Math.random() * 0.5),
@@ -96,9 +116,9 @@ class MusicVideo {
             
             const orb = new THREE.Mesh(orbGeometry, orbMaterial);
             orb.position.set(
-                (Math.random() - 0.5) * 30,
-                Math.random() * 10 + 2,
-                (Math.random() - 0.5) * 30
+                (Math.random() - 0.5) * 150,
+                Math.random() * 20 + 2,
+                (Math.random() - 0.5) * 150
             );
             orb.userData.isEnergyOrb = true;
             orb.userData.speed = Math.random() * 0.02 + 0.01;
@@ -107,8 +127,8 @@ class MusicVideo {
     }
     
     createMarketElements() {
-        // Stock market data visualization
-        const barCount = 50;
+        // More stock market bars spread wider
+        const barCount = 100;
         for (let i = 0; i < barCount; i++) {
             const height = Math.random() * 5 + 1;
             const geometry = new THREE.BoxGeometry(0.3, height, 0.3);
@@ -125,9 +145,9 @@ class MusicVideo {
             
             const bar = new THREE.Mesh(geometry, material);
             bar.position.set(
-                (i - barCount/2) * 0.5,
+                (i - barCount/2) * 1.5,
                 height / 2,
-                -5
+                -20 + Math.sin(i * 0.1) * 30
             );
             bar.userData.isMarketData = true;
             bar.userData.index = i;
@@ -157,8 +177,8 @@ class MusicVideo {
     }
     
     createHopeElements() {
-        // Rising elements for hope/rebuilding theme
-        for (let i = 0; i < 30; i++) {
+        // More rising elements spread wider
+        for (let i = 0; i < 80; i++) {
             const geometry = new THREE.ConeGeometry(0.1, 2, 6);
             const material = new THREE.MeshLambertMaterial({
                 color: new THREE.Color().setHSL(0.6, 0.7, 0.6),
@@ -168,12 +188,12 @@ class MusicVideo {
             
             const cone = new THREE.Mesh(geometry, material);
             cone.position.set(
-                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 100,
                 0,
-                (Math.random() - 0.5) * 20
+                (Math.random() - 0.5) * 100
             );
             cone.userData.isHope = true;
-            cone.userData.targetY = Math.random() * 8 + 2;
+            cone.userData.targetY = Math.random() * 15 + 2;
             cone.userData.riseSpeed = Math.random() * 0.02 + 0.005;
             this.scene.add(cone);
         }
@@ -219,8 +239,12 @@ class MusicVideo {
         // Update lyrics
         window.AnimationController.updateLyrics(this.currentTime);
         
-        // Animate energy elements
+        // Animate elements
         this.scene.traverse((child) => {
+            if (child.userData.isSkybox && child.material.uniforms) {
+                child.material.uniforms.time.value = this.currentTime;
+            }
+            
             if (child.userData.isEnergyWave && child.material.uniforms) {
                 child.material.uniforms.time.value = this.currentTime;
                 child.material.uniforms.amplitude.value = Math.sin(this.currentTime * 2) * 0.5 + 1;
@@ -254,11 +278,11 @@ class MusicVideo {
             }
         });
         
-        // Camera movement based on time
-        const cameraRadius = 15;
+        // Enhanced camera movement for infinite feel
+        const cameraRadius = 25;
         this.camera.position.x = Math.cos(this.currentTime * 0.1) * cameraRadius;
         this.camera.position.z = Math.sin(this.currentTime * 0.1) * cameraRadius;
-        this.camera.position.y = 5 + Math.sin(this.currentTime * 0.05) * 3;
+        this.camera.position.y = 8 + Math.sin(this.currentTime * 0.05) * 5;
         this.camera.lookAt(0, 2, 0);
     }
     
@@ -275,4 +299,3 @@ class MusicVideo {
 window.addEventListener('load', () => {
     new MusicVideo();
 });
-

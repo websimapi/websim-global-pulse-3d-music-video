@@ -111,6 +111,72 @@ window.Shaders = {
             
             gl_FragColor = vec4(color + distortion, 0.9);
         }
+    `,
+
+    // Trippy skybox shader
+    skyboxVertex: `
+        varying vec3 vWorldPosition;
+        
+        void main() {
+            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+            vWorldPosition = worldPosition.xyz;
+            
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    
+    skyboxFragment: `
+        uniform float time;
+        varying vec3 vWorldPosition;
+        
+        // Noise function
+        float noise(vec3 p) {
+            return sin(p.x * 2.0) * sin(p.y * 3.0) * sin(p.z * 1.5);
+        }
+        
+        // Fractal noise
+        float fractalNoise(vec3 p) {
+            float value = 0.0;
+            float amplitude = 1.0;
+            for(int i = 0; i < 4; i++) {
+                value += noise(p) * amplitude;
+                p *= 2.0;
+                amplitude *= 0.5;
+            }
+            return value;
+        }
+        
+        void main() {
+            vec3 direction = normalize(vWorldPosition);
+            
+            // Create flowing patterns
+            float pattern1 = sin(direction.x * 10.0 + time * 2.0) * cos(direction.y * 8.0 + time * 1.5);
+            float pattern2 = fractalNoise(direction * 5.0 + time * 0.5);
+            
+            // Spiral effect
+            float angle = atan(direction.x, direction.z);
+            float spiral = sin(angle * 8.0 + direction.y * 15.0 + time * 3.0);
+            
+            // Color cycling
+            vec3 color1 = vec3(0.8, 0.2, 1.0); // Purple
+            vec3 color2 = vec3(0.0, 0.8, 1.0); // Cyan
+            vec3 color3 = vec3(1.0, 0.4, 0.0); // Orange
+            vec3 color4 = vec3(1.0, 0.0, 0.5); // Pink
+            
+            float colorMix = (pattern1 + pattern2 + spiral) * 0.33;
+            colorMix = sin(colorMix + time) * 0.5 + 0.5;
+            
+            vec3 finalColor = mix(
+                mix(color1, color2, colorMix),
+                mix(color3, color4, colorMix),
+                sin(time * 0.8) * 0.5 + 0.5
+            );
+            
+            // Add brightness variation
+            float brightness = 0.3 + abs(pattern2) * 0.7;
+            finalColor *= brightness;
+            
+            gl_FragColor = vec4(finalColor, 1.0);
+        }
     `
 };
-
