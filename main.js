@@ -104,18 +104,32 @@ class MusicVideo {
         terrainGeometry.computeVertexNormals();
         
         const terrainMaterial = new THREE.MeshLambertMaterial({
-            color: 0x1a1a1a,
+            color: 0x333333,
             wireframe: false,
-            transparent: true,
-            opacity: 0.8
+            transparent: false,
+            side: THREE.DoubleSide
         });
         
         const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
         terrain.rotation.x = -Math.PI / 2;
-        terrain.position.y = -2;
+        terrain.position.y = -1;
         terrain.receiveShadow = true;
         terrain.userData.isTerrain = true;
         this.scene.add(terrain);
+        
+        // Add wireframe overlay for better visibility
+        const wireframeGeometry = terrainGeometry.clone();
+        const wireframeMaterial = new THREE.MeshBasicMaterial({
+            color: 0x666666,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+        });
+        const wireframeTerrain = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+        wireframeTerrain.rotation.x = -Math.PI / 2;
+        wireframeTerrain.position.y = -0.99;
+        wireframeTerrain.userData.isTerrainWireframe = true;
+        this.scene.add(wireframeTerrain);
     }
     
     createEnergyElements() {
