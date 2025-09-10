@@ -79,6 +79,7 @@ class MusicVideo {
     }
     
     createScenes() {
+        this.createTerrain(); // Add proper terrain first
         this.createEnergyElements();
         this.createMarketElements();
         this.createConflictElements();
@@ -88,13 +89,52 @@ class MusicVideo {
         this.createImageBillboards();
     }
     
+    createTerrain() {
+        // Create stable ground terrain that won't clip
+        const terrainGeometry = new THREE.PlaneGeometry(300, 300, 100, 100);
+        const vertices = terrainGeometry.attributes.position.array;
+        
+        // Add height variation to terrain
+        for (let i = 0; i < vertices.length; i += 3) {
+            const x = vertices[i];
+            const z = vertices[i + 2];
+            vertices[i + 1] = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 2;
+        }
+        terrainGeometry.attributes.position.needsUpdate = true;
+        terrainGeometry.computeVertexNormals();
+        
+        const terrainMaterial = new THREE.MeshLambertMaterial({
+            color: 0x1a1a1a,
+            wireframe: false,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
+        terrain.rotation.x = -Math.PI / 2;
+        terrain.position.y = -2;
+        terrain.receiveShadow = true;
+        terrain.userData.isTerrain = true;
+        this.scene.add(terrain);
+    }
+    
     createEnergyElements() {
         // Load energy pattern texture
         const textureLoader = new THREE.TextureLoader();
         const energyTexture = textureLoader.load('/energy_pattern.png');
         
-        // Enhanced energy waves with texture
-        const geometry = new THREE.PlaneGeometry(100, 100, 150, 150);
+        // Enhanced energy waves - positioned above ground to avoid clipping
+        const geometry = new THREE.PlaneGeometry(80, 80, 120, 120);
+        const vertices = geometry.attributes.position.array;
+        
+        // Add wave displacement to vertices
+        for (let i = 0; i < vertices.length; i += 3) {
+            const x = vertices[i];
+            const z = vertices[i + 2];
+            vertices[i + 1] = Math.sin(x * 0.1) * Math.cos(z * 0.1) * 0.5;
+        }
+        geometry.attributes.position.needsUpdate = true;
+        
         const material = new THREE.ShaderMaterial({
             uniforms: {
                 time: { value: 0 },
@@ -105,44 +145,49 @@ class MusicVideo {
             },
             vertexShader: window.Shaders.energyVertex,
             fragmentShader: window.Shaders.energyFragment,
-            transparent: true
+            transparent: true,
+            depthWrite: false // Prevent depth issues
         });
         
         const energyWave = new THREE.Mesh(geometry, material);
         energyWave.rotation.x = -Math.PI / 2;
+        energyWave.position.y = 0.5; // Position above ground
         energyWave.userData.isEnergyWave = true;
         this.scene.add(energyWave);
         
-        // Energy tunnel with texture
-        const tunnelGeometry = new THREE.CylinderGeometry(15, 15, 50, 32, 1, true);
+        // More detailed energy tunnel with better geometry
+        const tunnelGeometry = new THREE.CylinderGeometry(12, 12, 60, 64, 8, true);
         const tunnelMaterial = new THREE.MeshBasicMaterial({
             map: energyTexture,
             transparent: true,
-            opacity: 0.6,
-            side: THREE.DoubleSide
+            opacity: 0.4,
+            side: THREE.DoubleSide,
+            depthWrite: false
         });
         const energyTunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
         energyTunnel.rotation.x = Math.PI / 2;
-        energyTunnel.position.z = -30;
+        energyTunnel.position.set(0, 8, -35);
         energyTunnel.userData.isEnergyTunnel = true;
         this.scene.add(energyTunnel);
         
-        // More detailed floating energy orbs
-        for (let i = 0; i < 50; i++) {
-            const orbGeometry = new THREE.IcosahedronGeometry(0.2, 2);
+        // More detailed floating energy orbs with better geometry
+        for (let i = 0; i < 60; i++) {
+            const orbGeometry = new THREE.IcosahedronGeometry(0.3, 3); // Increased detail
             const orbMaterial = new THREE.MeshPhongMaterial({
                 color: new THREE.Color().setHSL(0.1, 1, 0.5 + Math.random() * 0.5),
                 transparent: true,
-                opacity: 0.8,
-                emissive: new THREE.Color().setHSL(0.1, 0.5, 0.2)
+                opacity: 0.9,
+                emissive: new THREE.Color().setHSL(0.1, 0.5, 0.3),
+                shininess: 100
             });
             
             const orb = new THREE.Mesh(orbGeometry, orbMaterial);
             orb.position.set(
-                (Math.random() - 0.5) * 150,
-                Math.random() * 20 + 2,
-                (Math.random() - 0.5) * 150
+                (Math.random() - 0.5) * 120,
+                Math.random() * 25 + 3,
+                (Math.random() - 0.5) * 120
             );
+            orb.castShadow = true;
             orb.userData.isEnergyOrb = true;
             orb.userData.speed = Math.random() * 0.02 + 0.01;
             this.scene.add(orb);
@@ -290,32 +335,74 @@ class MusicVideo {
     }
     
     createGlobeElement() {
-        // Create detailed globe with world map texture
+        // Create highly detailed globe with world map texture
         const textureLoader = new THREE.TextureLoader();
         const globeTexture = textureLoader.load('/globe_texture.png');
         
-        const globeGeometry = new THREE.SphereGeometry(5, 64, 64);
+        // Increased sphere detail significantly
+        const globeGeometry = new THREE.SphereGeometry(6, 128, 128);
         const globeMaterial = new THREE.MeshPhongMaterial({
             map: globeTexture,
-            transparent: true,
-            opacity: 0.9
+            transparent: false, // Remove transparency to prevent clipping
+            shininess: 30,
+            bumpScale: 0.1
         });
         
         const globe = new THREE.Mesh(globeGeometry, globeMaterial);
-        globe.position.set(20, 8, -20);
+        globe.position.set(25, 12, -25); // Positioned higher to avoid ground clipping
+        globe.castShadow = true;
+        globe.receiveShadow = true;
         globe.userData.isGlobe = true;
         this.scene.add(globe);
         
-        // Globe atmosphere effect
-        const atmosphereGeometry = new THREE.SphereGeometry(5.2, 32, 32);
-        const atmosphereMaterial = new THREE.MeshBasicMaterial({
-            color: 0x4488ff,
+        // Enhanced atmosphere effect with better geometry
+        const atmosphereGeometry = new THREE.SphereGeometry(6.3, 64, 64);
+        const atmosphereMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                opacity: { value: 0.3 }
+            },
+            vertexShader: `
+                varying vec3 vNormal;
+                void main() {
+                    vNormal = normalize(normalMatrix * normal);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float time;
+                uniform float opacity;
+                varying vec3 vNormal;
+                void main() {
+                    float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
+                    float pulse = sin(time * 2.0) * 0.1 + 0.9;
+                    gl_FragColor = vec4(0.3, 0.6, 1.0, fresnel * opacity * pulse);
+                }
+            `,
             transparent: true,
-            opacity: 0.2,
-            side: THREE.BackSide
+            side: THREE.BackSide,
+            depthWrite: false
         });
         const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
         globe.add(atmosphere);
+        
+        // Add orbital rings for more detail
+        for (let i = 0; i < 3; i++) {
+            const ringGeometry = new THREE.RingGeometry(7 + i * 0.5, 7.2 + i * 0.5, 64);
+            const ringMaterial = new THREE.MeshBasicMaterial({
+                color: 0x4488ff,
+                transparent: true,
+                opacity: 0.4,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            ring.rotation.x = Math.PI / 2;
+            ring.rotation.y = i * 0.3;
+            ring.userData.isGlobeRing = true;
+            ring.userData.index = i;
+            globe.add(ring);
+        }
     }
     
     createDroneElements() {
@@ -347,7 +434,7 @@ class MusicVideo {
     }
     
     createImageBillboards() {
-        // Create floating image displays throughout the scene
+        // Create floating image displays with proper depth sorting
         const textureLoader = new THREE.TextureLoader();
         const textures = [
             '/energy_pattern.png',
@@ -357,21 +444,24 @@ class MusicVideo {
         
         textures.forEach((texturePath, index) => {
             const texture = textureLoader.load(texturePath);
-            const billboardGeometry = new THREE.PlaneGeometry(6, 6);
+            const billboardGeometry = new THREE.PlaneGeometry(5, 5);
             const billboardMaterial = new THREE.MeshBasicMaterial({
                 map: texture,
                 transparent: true,
-                opacity: 0.7
+                opacity: 0.6,
+                depthWrite: false, // Prevent depth conflicts with 3D assets
+                alphaTest: 0.1
             });
             
             const billboard = new THREE.Mesh(billboardGeometry, billboardMaterial);
             billboard.position.set(
-                Math.cos(index * 2) * 30,
-                5 + index * 3,
-                Math.sin(index * 2) * 30
+                Math.cos(index * 2.1) * 40,
+                8 + index * 4,
+                Math.sin(index * 2.1) * 40
             );
             billboard.userData.isBillboard = true;
             billboard.userData.index = index;
+            billboard.renderOrder = 1; // Render after 3D assets
             this.scene.add(billboard);
         });
     }
@@ -410,7 +500,7 @@ class MusicVideo {
         this.currentTime = this.clock.getElapsedTime();
         
         // Update progress bar
-        const progress = Math.min(this.currentTime / 90, 1); // 90 seconds total
+        const progress = Math.min(this.currentTime / 90, 1);
         document.getElementById('progressBar').style.width = `${progress * 100}%`;
         
         // Update lyrics
@@ -428,13 +518,14 @@ class MusicVideo {
             }
             
             if (child.userData.isEnergyTunnel) {
-                child.rotation.z += 0.02;
-                child.material.opacity = 0.4 + Math.sin(this.currentTime * 3) * 0.2;
+                child.rotation.z += 0.015;
+                child.material.opacity = 0.3 + Math.sin(this.currentTime * 3) * 0.1;
             }
             
             if (child.userData.isEnergyOrb) {
-                child.position.y += Math.sin(this.currentTime * child.userData.speed * 10) * 0.02;
+                child.position.y += Math.sin(this.currentTime * child.userData.speed * 10) * 0.015;
                 child.rotation.y += child.userData.speed;
+                child.rotation.x += child.userData.speed * 0.5;
             }
             
             if (child.userData.isMarketDisplay) {
@@ -466,8 +557,18 @@ class MusicVideo {
             }
             
             if (child.userData.isGlobe) {
-                child.rotation.y += 0.005;
-                child.position.y = 8 + Math.sin(this.currentTime * 0.5) * 1;
+                child.rotation.y += 0.003;
+                child.position.y = 12 + Math.sin(this.currentTime * 0.5) * 0.8;
+                
+                // Animate globe rings
+                child.children.forEach((ringChild) => {
+                    if (ringChild.userData.isGlobeRing) {
+                        ringChild.rotation.z += 0.01 * (ringChild.userData.index + 1);
+                        if (ringChild.material.uniforms && ringChild.material.uniforms.time) {
+                            ringChild.material.uniforms.time.value = this.currentTime;
+                        }
+                    }
+                });
             }
             
             if (child.userData.isDrone) {
@@ -480,7 +581,7 @@ class MusicVideo {
             
             if (child.userData.isBillboard) {
                 child.rotation.y = Math.sin(this.currentTime + child.userData.index) * 0.3;
-                child.position.y = 5 + child.userData.index * 3 + Math.sin(this.currentTime * 2 + child.userData.index) * 0.5;
+                child.position.y = 8 + child.userData.index * 4 + Math.sin(this.currentTime * 2 + child.userData.index) * 0.5;
                 child.lookAt(this.camera.position);
             }
             
@@ -497,12 +598,12 @@ class MusicVideo {
             }
         });
         
-        // Enhanced camera movement for infinite feel
-        const cameraRadius = 25;
-        this.camera.position.x = Math.cos(this.currentTime * 0.1) * cameraRadius;
-        this.camera.position.z = Math.sin(this.currentTime * 0.1) * cameraRadius;
-        this.camera.position.y = 8 + Math.sin(this.currentTime * 0.05) * 5;
-        this.camera.lookAt(0, 2, 0);
+        // Enhanced camera movement for infinite feel with better positioning
+        const cameraRadius = 35;
+        this.camera.position.x = Math.cos(this.currentTime * 0.08) * cameraRadius;
+        this.camera.position.z = Math.sin(this.currentTime * 0.08) * cameraRadius;
+        this.camera.position.y = 15 + Math.sin(this.currentTime * 0.04) * 8;
+        this.camera.lookAt(0, 5, 0);
     }
     
     animate() {
